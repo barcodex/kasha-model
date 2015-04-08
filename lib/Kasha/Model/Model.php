@@ -503,44 +503,28 @@ class Model
 
 	/**
 	 * Returns whatever data is currently stored in the Model
-	 *  - If model is localisable, inject translations as _localized_ into returned data
 	 *
 	 * @return array
 	 */
 	public function getData()
 	{
-		// if model is localisable, include translations
-		if ($this->isLocalisable()) {
-            self::translateData($this->data);
-//            $this->data['_i18n_'] = $this->getLocalisations();
-//            $langCode = isset($_SESSION['language']['code']) ? $_SESSION['language']['code'] : 'en';
-//            if ($langCode != '' && array_key_exists($langCode, $this->data['_i18n_'])) {
-//                foreach($this->data['_i18n_'][$langCode] as $fieldName => $fieldValue) {
-//                    $this->data[$fieldName] = $fieldValue;
-//                }
-//            }
-		}
-
 		return $this->data;
 	}
 
-//    public static function translateData(&$data, $langCode = '') {
-//        if (!isset($data['_i18n_']) && isset($data['i18n'])) {
-//            // @TODO make JSON operation safe
-//            $data['_i18n_'] = json_decode($data['i18n'], true);
-//        }
-//        $i18n = Util::lavnn('_i18n_', $data, array());
-//        if (count($i18n) > 0) {
-//            if ($langCode == '') {
-//                $langCode = isset($_SESSION['language']['code']) ? $_SESSION['language']['code'] : 'en';
-//            }
-//            if ($langCode != '' && array_key_exists($langCode, $data['_i18n_'])) {
-//                foreach($data['_i18n_'][$langCode] as $fieldName => $fieldValue) {
-//                    $data[$fieldName] = $fieldValue;
-//                }
-//            }
-//        }
-//    }
+    public static function translateData(&$data, $langCode) {
+        if (!isset($data['_i18n_']) && isset($data['i18n'])) {
+            // @TODO make JSON operation safe
+            $data['_i18n_'] = json_decode($data['i18n'], true);
+        }
+        $i18n = Util::lavnn('_i18n_', $data, array());
+        if (count($i18n) > 0) {
+            if ($langCode != '' && array_key_exists($langCode, $data['_i18n_'])) {
+                foreach($data['_i18n_'][$langCode] as $fieldName => $fieldValue) {
+                    $data[$fieldName] = $fieldValue;
+                }
+            }
+        }
+    }
 
 	/**
 	 * Returns normal set of metadata for the table that is set in the constructor
@@ -564,68 +548,7 @@ class Model
 		return $model;
 	}
 
-	public function getTableMetadata($tableName)
-	{
-		$columns = array();
-		$dbInstance = Database::getInstance();
-		foreach ($dbInstance->getArray("DESCRIBE $tableName") as $columnInfo) {
-			$name = $columnInfo['Field'];
-			$typeInfo = $this->parseTypeInfo($columnInfo['Type']);
-			$columns[$name] = array(
-				'name' => $name,
-				'table' => $tableName,
-				'type' => $typeInfo['type'],
-				'length' => Util::lavnn('length', $typeInfo, ''),
-				'not_null' => 0 + ($columnInfo['Null'] == 'NO'),
-				'primary_key' => 0 + ($columnInfo['Key'] == 'PRI'),
-				'auto_increment' => 0 + ($columnInfo['Extra'] == 'auto_increment'),
-				'unique_key' => 0 + ($columnInfo['Key'] == 'UNI'),
-				'multiple_key' => 0 + ($columnInfo['Key'] == 'MUL'),
-				'fulltext_index' => 0 + ($columnInfo['Key'] == 'TXT'), //@TODO find the way to check it
-				'numeric' => 0 + in_array($typeInfo['type'], $dbInstance->getIntegerTypes()) + in_array($typeInfo['type'], $dbInstance->getFloatTypes()),
-				'blob' => 0 + in_array($typeInfo['type'], $dbInstance->getTextTypes()) + in_array($typeInfo['type'], $dbInstance->getBlobTypes()),
-				'unsigned' => 0 + $typeInfo['unsigned'],
-				'quotes' => 0 + Database::needQuotes($typeInfo['type']),
-				'nullable' => 0 + ($columnInfo['Null'] == 'YES'),
-				'scale' => Util::lavnn('length', $typeInfo, ''),
-				'align' => Database::getFieldAlignment($typeInfo['type']),
-				'enum' => Util::lavnn('enum', $typeInfo, ''),
-				'default' => $columnInfo['Default'],
-			);
-		}
 
-		return $columns;
-	}
-
-	/**
-	 * Parse a type definition string that MySql returns about the field, e.g. "int(10) unsigned"
-	 * @param $type
-	 *
-	 * @return array
-	 */
-	private function parseTypeInfo($type)
-	{
-		$output = array();
-		$typeInfo = explode(' ', $type);
-		if (count($typeInfo) > 0) {
-			$typeInfoParts = explode('(', array_shift($typeInfo));
-			if (count($typeInfoParts) > 0) {
-				$output['type'] = $typeInfoParts[0];
-				if (count($typeInfoParts) == 2) {
-					if ($output['type'] == 'enum') {
-						$output['enum'] = explode(',', str_replace(')', '', $typeInfoParts[1]));
-					} else {
-						$output['length'] = intval($typeInfoParts[1]);
-					}
-				}
-			}
-		}
-		// if there are parenthesis after the type name, they contain either length or enum values
-		// there are some useful data coming in $typeInfo that is still left after shifting out the type name
-		$output['unsigned'] = 0 + in_array('unsigned', $typeInfo);
-
-		return $output;
-	}
 
 	/**
 	 * Checks if field (given as $columnInfo from model's metadata) is localisable.
@@ -1112,13 +1035,7 @@ class Model
 		);
 		$query = TextProcessor::doText(file_get_contents(__DIR__ . "/Templates/GetRandomIds.sql"), $sqlParams);
 
-		$result = mysql_query($query);
-		$ids = array();
-		while($row = mysql_fetch_assoc($result)) {
-			$ids[] = $row['id'];
-		}
-
-		return $ids;
+		return Database::getInstance()->getColumn($query, 'id');
 	}
 
 	public function selectRandom($count, $searchParameters = array(), $format = 'array')
@@ -1150,21 +1067,6 @@ class Model
 		}
 
 		return $result;
-	}
-
-	/**
-	 * Reconstruct field metadata from mysql result
-	 *
-	 * @param $res
-	 * @param $i
-	 *
-	 * @return array
-	 */
-	public static function getFieldMetadata($res, $i)
-	{
-		$metadata = Database::getFieldMetadata($res, $i);
-
-		return $metadata;
 	}
 
 	/**
