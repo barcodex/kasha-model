@@ -208,8 +208,7 @@ class Database
 			$error = $this->lastError = $this->db->error;
 		} else {
 			$this->affectedRows = mysqli_num_rows($result);
-			// @TODO port to mysqli
-//			$this->affectedRowsTotal = intval(mysql_result(mysql_query("SELECT FOUND_ROWS()"), 0));
+			$this->affectedRowsTotal = intval(Util::lavnn('cnt', mysqli_fetch_assoc($this->db->query("SELECT FOUND_ROWS() AS cnt")), 0));
 			if ($this->affectedRows > 0) {
 				$skipped = Util::lavnn('offset', $paging, -1);
 				$stopAfter = Util::lavnn('limit', $paging, -1) > 0 ? $paging['offset'] + $paging['limit'] : -1;
@@ -249,8 +248,7 @@ class Database
 			$error = $this->lastError = $this->db->error;
 		} else {
 			$this->affectedRows = mysqli_num_rows($result);
-			// @TODO port to mysqli
-//			$this->affectedRowsTotal = intval(mysql_result(mysql_query("SELECT FOUND_ROWS()"), 0));
+			$this->affectedRowsTotal = intval(Util::lavnn('cnt', mysqli_fetch_assoc($this->db->query("SELECT FOUND_ROWS() AS cnt")), 0));
 			if ($this->affectedRows > 0) {
 				$i = 0;
 				while ($row = mysqli_fetch_assoc($result)) {
@@ -280,8 +278,7 @@ class Database
 		$this->lastError = '';
 		$result = $this->db->query($query);
 		$this->affectedRows = mysqli_num_rows($result);
-		// @TODO port to mysqli
-//			$this->affectedRowsTotal = intval(mysql_result(mysql_query("SELECT FOUND_ROWS()"), 0));
+		$this->affectedRowsTotal = intval(Util::lavnn('cnt', mysqli_fetch_assoc($this->db->query("SELECT FOUND_ROWS() AS cnt")), 0));
 		if (!$result) {
 			$error = $this->lastError = $this->db->error;
 		} elseif ($this->affectedRows > 0) {
@@ -312,7 +309,7 @@ class Database
 		} else {
 			$n = $this->affectedRows = mysqli_affected_rows($this->db);
 			//$this->lastInsertId = mysqli_insert_id($this->db);
-			//$this->affectedRowsTotal = intval(mysqli_result(mysqli_query("SELECT FOUND_ROWS()"), 0));
+			//$this->affectedRowsTotal = intval(Util::lavnn('cnt', mysqli_fetch_assoc($this->db->query("SELECT FOUND_ROWS() AS cnt")), 0));
 			return $n;
 		}
 	}

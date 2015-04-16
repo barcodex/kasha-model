@@ -537,12 +537,14 @@ class Model
 		$model = Cache::get($this->tableName);
 		if (!$model) {
 			// Get the metadata and store it in the cache
-			$model = $this->getTableMetadata($this->tableName);
+			$model = Database::getTableMetadata($this->tableName);
 			if (count($model) > 0) {
-				Cache::set('metadata/' . $this->tableName, $model);
+				Cache::set('metadata/' . $this->tableName, json_encode($model, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 			} else {
 				// @TODO report if needed
 			}
+		} else {
+			$model = json_decode($model, true);
 		}
 
 		return $model;
@@ -933,18 +935,25 @@ class Model
 		if ($columnData['nullable'] && is_null($value)) {
 			return 'NULL';
 		} elseif(in_array($columnData['type'], $dbInstance->getDateTypes()) && $value == '') {
-			return 'NULL';
-		} elseif ($columnData['quotes']) {
+			$value = trim($value);
+			if ($value == '' || !date_create($value)) {
+				return 'NULL';
+			}
+		} elseif ($columnData['quotes'] == 1) {
 			// sanitize all types from html - if markup is needed, model consumer needs to escape/unescape the values.
 			if (!$this->allowHtml) {
 				$value = strip_tags($value);
 			}
 			return "'" . str_replace("'", "''", $value) . "'";
 		} elseif(in_array($columnData['type'], $dbInstance->getFloatTypes())) {
+			$value = filter_var($value, FILTER_SANITIZE_NUMBER_FLOAT);
 			return 0.0 + floatval(str_replace(',', '.', $value));
 		} else {
+			$value = filter_var($value, FILTER_SANITIZE_NUMBER_INT);
 			return 0 + intval(str_replace(',', '', $value));
 		}
+
+		return $value;
 	}
 
 	public function checkAccess($action) {
