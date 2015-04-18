@@ -6,7 +6,49 @@ It is a simple database abstraction layer that is not meant to compete with ORM 
 
 Still, it greatly simplifies working with database table using business objects that are instances of classes that extend Kasha\Model\Model.
 
-This base class contains a lot of code that is generic for any database table wrapper, such as CRUD operations, reflection, internationalisation of string-typed fields and stubs for postprocessing triggers.
+## API
+
+This base class (Kasha\Model\Model) contains a lot of code that is generic for any database table wrapper, such as CRUD operations, reflection, internationalisation of string-typed fields and stubs for postprocessing triggers.
+
+Public methods (incomplete list):
+
+|--------|------------|
+| method | description|
+|--------|------------|
+| setTableName($tableName) | Sets the name of underlying table in the database |
+| load($id) | Loads a data row from the underlying database table in the object |
+| isValid() | Checks if model's data contains at least 'id' column |
+| getData() | returns the full data that is stored internally at the moment |
+| getID() | returns the value of 'id' column from the data that is stored internally at the moment |
+| insert($fields) | inserts a new row into the database |
+| update($fields) | updates currently loaded row in the database |
+| delete() | deletes current row from the underlying database table |
+| getList($searchParams) | returns the list of rows that match specified search parameters |
+| getRow($searchParams) | returns the first row that match specified search parameters |
+| exists($searchParams) | returns true if at least one row in underlying table matches the search paramerters |
+| get($fieldName) | returns the value of the column of currently loaded row |
+|--------|------------|
+
+There are also some stubs for the methods that get very useful in your business classes that extend Kasha\Model\Model:
+
+|--------|------------|
+| method | description|
+|--------|------------|
+| getExtendedData() | allows to extended standard data (returned with getData() with more columns |
+| onUpdate($id) | triggered after update() method is run |
+| onInsert($id) | triggered after insert() method is run |
+| onDelete($id) | triggered after delete() method is run |
+|--------|------------|
+
+## Conventions
+
+Kasha assumes that database table have structure that follows some rules:
+
+* there is at least 'id' field in the table. Even if table is a mapping, always add 'id' field
+* there is a field called 'created' to mark the time when this row was created
+* there are fields called 'updated' and 'editor' to mark the time of last update and the id of the user who did this edit
+
+## Internals
 
 The whole Kasha framework favours standard associative array of PHP - if you ever tried to use fetch_assoc method on mysql results, you know how such an array represents a row in the table.
 
