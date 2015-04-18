@@ -102,11 +102,12 @@ class Cache extends BaseCache
 	}
 
 	/**
-	 * @param $tableName string
-	 * @param $data array
+	 * @param Model $model
 	 */
-	public function setModelData($tableName, $data)
+	public function setModelData($model)
 	{
+		$data = $model->getExtendedData();
+		$tableName = $model->getTableName();
 		$id = Util::lavnn('id', $data, 0);
 		if ($id > 0) {
 			// save the value in cache

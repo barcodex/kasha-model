@@ -54,7 +54,18 @@ class Model
 	/** @var Cache */
 	private $cache = null;
 
+	public function __construct($tableName = '')
+	{
+		$this->setTableName($tableName);
+
+		// make sure that Model|Caching\Cache is instantiated before using any model
+		$this->cache = ModelConfig::getInstance()->getCache();
+	}
+
+
 	/**
+	 * Overwrite the default cache object that was set when instantiating the Model object
+	 *
 	 * @param $cache Cache
 	 */
 	public function setCache($cache)
@@ -93,11 +104,6 @@ class Model
 
 		/** @var $oModel Model */
 		return $oModel->load($id, $revisionDate);
-	}
-
-	public function __construct($tableName = '')
-	{
-		$this->setTableName($tableName);
 	}
 
 	/**
@@ -292,8 +298,7 @@ class Model
 				// nothing to do, data is already loaded
 			} else {
 				// first, to ask from the cache
-				//$cached = Cache::getModelItem($this, $id);
-				$cached = false; // @TODO! Make compatible cache objects
+				$cached = $this->cache->getModelData($this->tableName, $this->getID());
 				if (!$cached) {
 					// load from the database
 					$sqlFileName = get_class($this) . '_GetDetails';
@@ -308,8 +313,8 @@ class Model
 					$this->data = Database::getInstance()->getRow($query);
 					// IMPORTANT do not save model data to cache at this stage by default.
 					//  If done so, subclasses would miss info set in getData(). We require explicit cacheOnLoad = true for this
-					if ($this->cacheOnLoad) {
-						//Cache::setModelItem($this, $this->data);
+					if ($this->cacheOnLoad && !is_null($this->cache)) {
+						$this->cache->setModelData($this);
 						$this->isCached = true;
 					}
 				} else {
@@ -511,6 +516,14 @@ class Model
 		return $this->data;
 	}
 
+	/**
+	 * Returns extended data for the model - every subclass should overload this method
+	 */
+	public function getExtendedData()
+	{
+		return $this->getData();
+	}
+
     public static function translateData(&$data, $langCode) {
         if (!isset($data['_i18n_']) && isset($data['i18n'])) {
             // @TODO make JSON operation safe
@@ -534,23 +547,20 @@ class Model
 	public function getMetadata()
 	{
 		// Try to get the model from the cache
-		$model = Cache::get($this->tableName);
-		if (!$model) {
+		$cacheExists = !is_null($this->cache);
+		$modelMetadata = $cacheExists ? $this->cache->getModelMetadata($this->tableName) : false;
+		if (!$modelMetadata) {
 			// Get the metadata and store it in the cache
-			$model = Database::getTableMetadata($this->tableName);
-			if (count($model) > 0) {
-				Cache::set('metadata/' . $this->tableName, json_encode($model, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+			$modelMetadata = Database::getTableMetadata($this->tableName);
+			if (count($modelMetadata) > 0 && $cacheExists) {
+				$this->cache->setModelMetadata($this->tableName, $modelMetadata);
 			} else {
 				// @TODO report if needed
 			}
-		} else {
-			$model = json_decode($model, true);
 		}
 
-		return $model;
+		return $modelMetadata;
 	}
-
-
 
 	/**
 	 * Checks if field (given as $columnInfo from model's metadata) is localisable.

@@ -364,7 +364,7 @@ class Database
 				'auto_increment' => 0 + ($columnInfo['Extra'] == 'auto_increment'),
 				'unique_key' => 0 + ($columnInfo['Key'] == 'UNI'),
 				'multiple_key' => 0 + ($columnInfo['Key'] == 'MUL'),
-				'fulltext_index' => 0 + ($columnInfo['Key'] == 'TXT'), //@TODO find the way to check it
+				'fulltext_index' => 0 + ($columnInfo['Key'] == 'TXT'),
 				'numeric' => 0 + in_array($typeInfo['type'], $instance->getIntegerTypes()) + in_array($typeInfo['type'], $instance->getFloatTypes()),
 				'blob' => 0 + in_array($typeInfo['type'], $instance->getTextTypes()) + in_array($typeInfo['type'], $instance->getBlobTypes()),
 				'unsigned' => 0 + $typeInfo['unsigned'],
@@ -479,7 +479,6 @@ class Database
 	public static function convertMysqliType($mysqliType)
 	{
 		$result = '';
-		// @TODO finish 100%
 		switch($mysqliType) {
 			case MYSQLI_TYPE_TINY: $result = 'tinyint'; break;
 			case 2: $result = 'smallint'; break;
