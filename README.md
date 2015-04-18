@@ -12,7 +12,6 @@ This base class (Kasha\Model\Model) contains a lot of code that is generic for a
 
 Public methods (incomplete list):
 
-|--------|------------|
 | method | description|
 |--------|------------|
 | setTableName($tableName) | Sets the name of underlying table in the database |
@@ -27,18 +26,15 @@ Public methods (incomplete list):
 | getRow($searchParams) | returns the first row that match specified search parameters |
 | exists($searchParams) | returns true if at least one row in underlying table matches the search paramerters |
 | get($fieldName) | returns the value of the column of currently loaded row |
-|--------|------------|
 
 There are also some stubs for the methods that get very useful in your business classes that extend Kasha\Model\Model:
 
-|--------|------------|
 | method | description|
 |--------|------------|
 | getExtendedData() | allows to extended standard data (returned with getData() with more columns |
 | onUpdate($id) | triggered after update() method is run |
 | onInsert($id) | triggered after insert() method is run |
 | onDelete($id) | triggered after delete() method is run |
-|--------|------------|
 
 ## Conventions
 
