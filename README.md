@@ -32,9 +32,9 @@ There are also some stubs for the methods that get very useful in your business 
 | method | description|
 |--------|------------|
 | getExtendedData() | allows to extended standard data (returned with getData() with more columns |
-| onUpdate($id) | triggered after update() method is run |
-| onInsert($id) | triggered after insert() method is run |
-| onDelete($id) | triggered after delete() method is run |
+| onUpdate($id) | triggered after update() method is run; id of the row is provided |
+| onInsert($id) | triggered after insert() method is run; id of the row is provided |
+| onDelete($id) | triggered after delete() method is run; id of the row is provided |
 
 ## Conventions
 
@@ -54,11 +54,30 @@ Of course, model is a business object, which it means that whatever logic can be
 
 However, we strongly recommend to extend the raw data array within getExtendedData() method (which by default just wraps getData()).
 
+```php
+$bookModel = new Book();
+// use load() to populate model object with data, it's chainable
+$data = $book->load($id)->getData(); // data that corresponds to table structure
+$extendedData = $book->getExtendedData(); // same data plus additional fields
+```
+
 One of the biggest wins of using Model subclasses is actually the postprocessing hooks functionality. You can implement your business logic (cascading deletes/updates, refreshing statistics, cleaning of the cache values, queueing messages, sending mails etc - you name it) in onDelete(), onInsert() on onUpdate() methods, and you can do that depending on the fields that were changed or even previous values of these fields.
 
-For example, you can write a specific code which will be triggered only when field 'status' of your field changes from 'open' to 'progress', or when value of 'views' column exceeds 100.
+For example, you can write a specific code which will be triggered only when field 'status' of your field changes from 'open' to 'progress', or when value of 'views' column exceeds 100. Here we'll update the watched counter for the book when someone adds it to the watch list:
 
-For running simple updated on the fields, you just pass associative array with changed fields to update() method:
+```php
+class WatchList extends Model {
+	public function onInsert($id) {
+		$bookId = $this->get('book');
+		$bookModel = new Book();
+		$bookModel->load($bookId);
+		$cnt = $bookModel->get('cnt_watched');
+		$bookModel->update(array('cnt_watched' => $cnt+1));
+	}
+}
+```
+
+For running simple updates on the fields, you just pass associative array with changed fields to update() method:
 
 ```php
 $user = new User();
@@ -107,4 +126,4 @@ First line of this snippet makes sure that base cache class is instantiated for 
 
 The constructor of Country class asks Kasha\Model\ModelConfig for an instance of the cache, which by default will be an instance of Kasha\Model\Cache, created on the same root folder as Kasha\Caching\Cache, instantiated in first line of the snippet.
 
-This default behavour can also be overwritten by providing another Cache class if required
+This default behaviour can also be overwritten by providing another Cache class if required
