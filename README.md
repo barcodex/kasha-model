@@ -6,6 +6,24 @@ It is a simple database abstraction layer that is not meant to compete with ORM 
 
 Still, it greatly simplifies working with database table using business objects that are instances of classes that extend Kasha\Model\Model.
 
+## Installation
+
+Install Model library with Composer by adding a requirement into composer.json of your project:
+
+```json
+{
+   "require": {
+        "barcodex/kasha-model": "*"
+   }
+}
+```
+
+or requiring it from the command line:
+
+```bash
+composer require barcodex/kasha-model:*
+```
+
 ## API
 
 This base class (Kasha\Model\Model) contains a lot of code that is generic for any database table wrapper, such as CRUD operations, reflection, internationalisation of string-typed fields and stubs for postprocessing triggers.
